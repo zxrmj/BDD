@@ -19,7 +19,7 @@ public:
 
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
-
+	CMenu *dlg_menu; // 对话框菜单
 
 // 实现
 protected:
