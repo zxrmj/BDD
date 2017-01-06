@@ -275,10 +275,8 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 			dlg->battery_count++;
 			current_speed = dlg->battery_count / ((getTickCount() - dlg->start_time) / getTickFrequency());
 			dlg->showStatic(st_count, string("Battery No. " + to_string(dlg->battery_count)).c_str());
-			//dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed)).c_str());
 			dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed) + " frame per-second.").c_str());
 			// »æÖÆµ½¶ÔÓ¦µÄ¿Ø¼þ
-			//int64 time0 = getTickCount();
 			switch (dlg->used_cam)
 			{
 			case 1:
@@ -294,24 +292,70 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 						classifier1.Predict(feat_vec, result, RESULT_ORDER::ORDER_DECENDING);
 						if (result[0].second == 0)
 						{
-							dlg->showStatic(IDC_DFT1, "²àÃæÓÐÈ±ÏÝ");
+							dlg->showStatic(IDC_DFT1, "²àÃæ»®ºÛÈ±ÏÝ");
 						}
 						else
 						{
-							dlg->showStatic(IDC_DFT1, "²àÃæÎÞÈ±ÏÝ");
+							dlg->showStatic(IDC_DFT1, "ÎÞÈ±ÏÝ");
 						}
 					}
 				}
 				else
 				{
-
+					Mat battery;
+					region::detectNakedBattery(img, battery);
+					if (battery.data)
+					{
+						vector<pair<float, int>> result;
+						Mat feat_vec = classifier2.ExtractFeatureFunction(battery);
+						classifier2.Predict(feat_vec, result, RESULT_ORDER::ORDER_DECENDING);
+						if (result[0].second != 0)
+						{
+							dlg->showStatic(IDC_DFT2, "²àÃæ°¼¿ÓÈ±ÏÝ");
+						}
+						else
+						{
+							dlg->showStatic(IDC_DFT2, "ÎÞÈ±ÏÝ");
+						}
+					}
 				}
 				dlg->DrawPicToHDC(img, 0);
 				break;
 			}
 			case 2:
+			{
+				Mat battery;
+				region::detectNakedBattery(img, battery);
+				if (battery.data)
+				{
+					vector<pair<float, int>> result;
+					Mat feat_vec = classifier2.ExtractFeatureFunction(battery);
+					classifier3.Predict(feat_vec, result, RESULT_ORDER::ORDER_DECENDING);
+					if (result[0].second != 0)
+					{
+						dlg->showStatic(IDC_DFT3, "¶¥ÃæÐâºÛÈ±ÏÝ");
+					}
+					else
+					{
+						dlg->showStatic(IDC_DFT3, "ÎÞÈ±ÏÝ");
+					}
+					result.clear();
+					classifier4.Predict(feat_vec, result, RESULT_ORDER::ORDER_DECENDING);
+					if (result[0].second != 0)
+					{
+						dlg->showStatic(IDC_DFT4, "¶¥Ãæ°¼¿ÓÈ±ÏÝ");
+					}
+					else
+					{
+						dlg->showStatic(IDC_DFT4, "ÎÞÈ±ÏÝ");
+					}
+
+				}
+
 				dlg->DrawPicToHDC(img, 1);
 				break;
+			}
+				
 			case 4:
 				dlg->DrawPicToHDC(img, 2);
 				break;
