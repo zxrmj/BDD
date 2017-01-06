@@ -185,7 +185,10 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Classifier.h" />
     <ClInclude Include="CvvImage.h" />
+    <ClInclude Include="cv_glcm.h" />
+    <ClInclude Include="ImageAlgotherm.h" />
     <ClInclude Include="m3Api.h" />
     <ClInclude Include="m3ErrorCodes.h" />
     <ClInclude Include="m3Ext.h" />
@@ -198,7 +201,10 @@
     <ClInclude Include="xiApi.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Classifier.cpp" />
     <ClCompile Include="CvvImage.cpp" />
+    <ClCompile Include="cv_glcm.cpp" />
+    <ClCompile Include="ImageAlgotherm.cpp" />
     <ClCompile Include="mfc_battery.cpp" />
     <ClCompile Include="mfc_batteryDlg.cpp" />
     <ClCompile Include="stdafx.cpp">

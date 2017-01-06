@@ -7,6 +7,8 @@
 #include "mfc_batteryDlg.h"
 #include "afxdialogex.h"
 #include "xiApi.h"
+#include "Classifier.h"
+#include "ImageAlgotherm.h"
 #pragma comment(lib,"m3apiX64.lib")
 
 #ifdef _DEBUG
@@ -196,6 +198,7 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 		dlg->MessageBoxW(_T("Error 201:\nNo camera driver detected,please reinstall or repair them."));
 		return;
 	}
+
 	// open cam
 	stat = xiOpenDevice(0, &xiH);
 	if (stat != XI_OK)
@@ -203,7 +206,7 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 		dlg->MessageBoxW(_T("Error 202:\nConnect to camera failed,please insure camera(s) is(are) already linked to this PC."));
 		return;
 	}
-	stat = xiSetParamInt(xiH, XI_PRM_EXPOSURE, 10000);
+	stat = xiSetParamInt(xiH, XI_PRM_EXPOSURE, 800);
 	if (stat != XI_OK)
 	{
 		dlg->MessageBoxW(_T("Error 203:\nSet exposure time failed,please contact to sofeware supplier."));
@@ -215,6 +218,15 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 		dlg->MessageBoxW(_T("Error 204:\nSet data format failed,please contact to sofeware supplier."));
 		return;
 	}
+//#define TRIGGER
+#ifdef TRIGGER
+	stat = xiSetParamInt(xiH, XI_PRM_TRG_SOURCE, 2);
+	if (stat != XI_OK)
+	{
+		dlg->MessageBoxW(_T("Error 204:\nSet data format failed,please contact to sofeware supplier."));
+		return;
+	}
+#endif // TRIGGER
 	stat = xiStartAcquisition(xiH);
 	if (stat != XI_OK)
 	{
@@ -222,6 +234,8 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 		return;
 	}
 	Mat splash = imread("moe2.jpeg");
+	Mat splash_wt_signal = imread("moe3.jpeg");
+	dlg->InitHDC();
 	dlg->DrawPicToHDC(splash, 0);
 	dlg->DrawPicToHDC(splash, 1);
 	dlg->DrawPicToHDC(splash, 2);
@@ -230,38 +244,87 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 	int current_speed = 0;
 	CStatic* st_count = (CStatic*)dlg->GetDlgItem(IDC_BTY_CNT);
 	CStatic* st_speed = (CStatic*)dlg->GetDlgItem(IDC_BTY_SPD);
-	dlg->InitHDC();
+	Classifier color_classifier;
+	color_classifier.NetName.clear();
+	color_classifier.Load("colornet.xml");
+	color_classifier.Save("colornet2.xml");
+	color_classifier.ExtractFeatureFunction = feature::extractColorFeature;
 	for (;;)
 	{
 		stat = xiGetImage(xiH, 1000, &image);
-		if (stat != XI_OK)
+		if (stat == XI_OK)
+		{
+			Mat img(Size(image.width, image.height), CV_8UC3);
+			memcpy(img.data, image.bp, image.width*image.height * 3);
+			dlg->battery_count++;
+			current_speed = dlg->battery_count / ((getTickCount() - dlg->start_time) / getTickFrequency());
+			dlg->showStatic(st_count, string("Battery No. " + to_string(dlg->battery_count)).c_str());
+			//dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed)).c_str());
+			dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed) + " frame per-second.").c_str());
+			// 绘制到对应的控件
+			//int64 time0 = getTickCount();
+			switch (dlg->used_cam)
+			{
+			case 1:
+			{
+				Mat battery;
+				region::detectColourBattery(img, battery);
+				if (battery.data)
+				{
+					vector<pair<float, int>> result;
+					Mat feat_vec = color_classifier.ExtractFeatureFunction(battery);
+					color_classifier.Predict(feat_vec, result, RESULT_ORDER::ORDER_DECENDING);
+					if (result[0].second == 0)
+					{
+						dlg->showStatic(IDC_DFT1, "侧面有缺陷");
+					}
+					else
+					{
+						dlg->showStatic(IDC_DFT1, "侧面无缺陷");
+					}
+				}
+				dlg->DrawPicToHDC(img, 0);
+				break;
+			}
+			case 2:
+				dlg->DrawPicToHDC(img, 1);
+				break;
+			case 4:
+				dlg->DrawPicToHDC(img, 2);
+				break;
+			default:
+				break;
+			}
+			
+		}
+		else if (stat == XI_TIMEOUT)
+		{
+			switch (dlg->used_cam)
+			{
+			case 1:
+				dlg->DrawPicToHDC(splash_wt_signal, 0);
+				break;
+			case 2:
+				dlg->DrawPicToHDC(splash_wt_signal, 1);
+				break;
+			case 4:
+				dlg->DrawPicToHDC(splash_wt_signal, 2);
+				break;
+			default:
+				break;
+			}
+			
+		}
+		else
 		{
 			dlg->MessageBoxW(_T("Error 206:\nCamera lose connection!\n"));
 			dlg->showStatic(IDC_STATBAR, to_string(stat).c_str());
 			return;
 		}
-		Mat img(Size(image.width, image.height), CV_8UC3);
-		memcpy(img.data, image.bp, image.width*image.height * 3);
-		dlg->battery_count++;
-		current_speed = dlg->battery_count / ((getTickCount() - dlg->start_time) / getTickFrequency());
-		dlg->showStatic(st_count, string("Battery No. " + to_string(dlg->battery_count)).c_str());
-		//dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed)).c_str());
-		dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed) + " frame per-second.").c_str());
-		// 绘制到对应的控件
-		switch (dlg->used_cam)
-		{
-		case 1:
-			dlg->DrawPicToHDC(img, 0);
-			break;
-		case 2:
-			dlg->DrawPicToHDC(img, 1);
-			break;
-		case 4:
-			dlg->DrawPicToHDC(img, 2);
-			break;
-		default:
-			break;
-		}
+		
+	/*	int64 time1 = getTickCount() - time0;
+		double speed =1000* time1 / getTickFrequency();
+		dlg->showStatic(st_speed, string("Current Speed. " + to_string(speed)).c_str());*/
 	}
 
 }

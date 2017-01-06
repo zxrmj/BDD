@@ -51,6 +51,15 @@
     <ClInclude Include="m3Ext.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Classifier.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="cv_glcm.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ImageAlgotherm.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mfc_battery.cpp">
@@ -63,6 +72,15 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="CvvImage.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Classifier.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="cv_glcm.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ImageAlgotherm.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
