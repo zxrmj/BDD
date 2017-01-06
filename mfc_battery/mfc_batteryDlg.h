@@ -22,11 +22,12 @@ public:
 #endif
 	int battery_count;
 	long long start_time;
-
+	bool color_battery;
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 	CMenu *dlg_menu; // 对话框菜单
 	CFont font;
+	CFont font_s;
 	HDC hDC[3];
 	CRect rect[3];
 	CvvImage cimg;
@@ -45,6 +46,7 @@ public:
 	void InitHDC();
 	void DrawPicToHDC(Mat mat, UINT ID);
 	void SetFontFormat(UINT ID);
+	void SetFontSFormat(UINT ID);
 	void DefaultScreen();
 	void showStatic(CStatic* st, const char* str);
 	void showStatic(UINT nID, const char* str);
@@ -55,4 +57,5 @@ public:
 	afx_msg void OnBnClickedRaCam1();
 	afx_msg void OnBnClickedRaCam2();
 	afx_msg void OnBnClickedRaCam3();
+	afx_msg void OnBnClickedCheck1();
 };

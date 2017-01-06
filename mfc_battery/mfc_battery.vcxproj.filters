@@ -57,7 +57,7 @@
     <ClInclude Include="cv_glcm.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="ImageAlgotherm.h">
+    <ClInclude Include="ImageAlgorithm.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -80,7 +80,7 @@
     <ClCompile Include="cv_glcm.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="ImageAlgotherm.cpp">
+    <ClCompile Include="ImageAlgorithm.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -8,7 +8,7 @@
 #include "afxdialogex.h"
 #include "xiApi.h"
 #include "Classifier.h"
-#include "ImageAlgotherm.h"
+#include "ImageAlgorithm.h"
 #pragma comment(lib,"m3apiX64.lib")
 
 #ifdef _DEBUG
@@ -60,6 +60,7 @@ Cmfc_batteryDlg::Cmfc_batteryDlg(CWnd* pParent /*=NULL*/)
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	battery_count = 0;
 	start_time = 0;
+	color_battery = true;
 }
 
 void Cmfc_batteryDlg::DoDataExchange(CDataExchange* pDX)
@@ -78,6 +79,7 @@ BEGIN_MESSAGE_MAP(Cmfc_batteryDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RA_CAM1, &Cmfc_batteryDlg::OnBnClickedRaCam1)
 	ON_BN_CLICKED(IDC_RA_CAM2, &Cmfc_batteryDlg::OnBnClickedRaCam2)
 	ON_BN_CLICKED(IDC_RA_CAM3, &Cmfc_batteryDlg::OnBnClickedRaCam3)
+	ON_BN_CLICKED(IDC_CHECK1, &Cmfc_batteryDlg::OnBnClickedCheck1)
 END_MESSAGE_MAP()
 
 
@@ -114,14 +116,15 @@ BOOL Cmfc_batteryDlg::OnInitDialog()
 
 	// TODO: 在此添加额外的初始化代码
 	font.CreatePointFont(240, _T("Arial"));
-	SetFontFormat(IDC_DFT1);
-	SetFontFormat(IDC_DFT2);
-	SetFontFormat(IDC_DFT3);
-	SetFontFormat(IDC_DFT4);
-	SetFontFormat(IDC_DFT5);
-	SetFontFormat(IDC_DFT6);
-	SetFontFormat(IDC_DFT7);
-	SetFontFormat(IDC_DFT8);
+	font_s.CreatePointFont(160, _T("Arial"));
+	SetFontSFormat(IDC_DFT1);
+	SetFontSFormat(IDC_DFT2);
+	SetFontSFormat(IDC_DFT3);
+	SetFontSFormat(IDC_DFT4);
+	SetFontSFormat(IDC_DFT5);
+	SetFontSFormat(IDC_DFT6);
+	SetFontSFormat(IDC_DFT7);
+	SetFontSFormat(IDC_DFT8);
 	SetFontFormat(IDC_BTY_SPD);
 	SetFontFormat(IDC_BTY_CNT);
 	// Start thread:
@@ -244,11 +247,24 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 	int current_speed = 0;
 	CStatic* st_count = (CStatic*)dlg->GetDlgItem(IDC_BTY_CNT);
 	CStatic* st_speed = (CStatic*)dlg->GetDlgItem(IDC_BTY_SPD);
-	Classifier color_classifier;
-	color_classifier.NetName.clear();
-	color_classifier.Load("colornet.xml");
-	color_classifier.Save("colornet2.xml");
-	color_classifier.ExtractFeatureFunction = feature::extractColorFeature;
+
+	// 分类器1 : 彩色包膜电池
+	Classifier classifier1;
+	classifier1.Load("net1.xml");
+	classifier1.ExtractFeatureFunction = feature::extractColorFeature;
+	// 分类器2 : 未包膜电池
+	Classifier classifier2;
+	classifier2.Load("net2.xml");
+	classifier2.ExtractFeatureFunction = feature::extractNakedFeature;
+	// 分类器3 : 侧面锈痕
+	Classifier classifier3;
+	classifier3.Load("net3.xml");
+	classifier3.ExtractFeatureFunction = feature::extractRustyFeature;
+	// 分类器4 : 顶部凹坑
+	Classifier classifier4;
+	classifier4.Load("net4.xml");
+	classifier4.ExtractFeatureFunction = feature::extractUpSidePitFeature;
+
 	for (;;)
 	{
 		stat = xiGetImage(xiH, 1000, &image);
@@ -267,21 +283,28 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 			{
 			case 1:
 			{
-				Mat battery;
-				region::detectColourBattery(img, battery);
-				if (battery.data)
+				if (dlg->color_battery)
 				{
-					vector<pair<float, int>> result;
-					Mat feat_vec = color_classifier.ExtractFeatureFunction(battery);
-					color_classifier.Predict(feat_vec, result, RESULT_ORDER::ORDER_DECENDING);
-					if (result[0].second == 0)
+					Mat battery;
+					region::detectColourBattery(img, battery);
+					if (battery.data)
 					{
-						dlg->showStatic(IDC_DFT1, "侧面有缺陷");
+						vector<pair<float, int>> result;
+						Mat feat_vec = classifier1.ExtractFeatureFunction(battery);
+						classifier1.Predict(feat_vec, result, RESULT_ORDER::ORDER_DECENDING);
+						if (result[0].second == 0)
+						{
+							dlg->showStatic(IDC_DFT1, "侧面有缺陷");
+						}
+						else
+						{
+							dlg->showStatic(IDC_DFT1, "侧面无缺陷");
+						}
 					}
-					else
-					{
-						dlg->showStatic(IDC_DFT1, "侧面无缺陷");
-					}
+				}
+				else
+				{
+
 				}
 				dlg->DrawPicToHDC(img, 0);
 				break;
@@ -344,20 +367,20 @@ void Cmfc_batteryDlg::InitHDC()
 
 void Cmfc_batteryDlg::DrawPicToHDC(Mat mat, UINT ID)
 {
-	/*CDC *pDC = GetDlgItem(ID)->GetDC();
-	HDC hDC = pDC->GetSafeHdc();
-	CRect rect;
-	GetDlgItem(ID)->GetClientRect(&rect);
-	CvvImage cimg;*/
-	cimg.CopyOf(mat); // 复制图片
-	cimg.DrawToHDC(hDC[ID], &rect[ID]); // 将图片绘制到显示控件的指定区域内
-	//ReleaseDC(pDC);
+	cimg.CopyOf(mat);
+	cimg.DrawToHDC(hDC[ID], &rect[ID]);
 }
 
 void Cmfc_batteryDlg::SetFontFormat(UINT ID)
 {
 	CStatic* st = (CStatic*)(GetDlgItem(ID));
 	st->SetFont(&font);
+}
+
+void Cmfc_batteryDlg::SetFontSFormat(UINT ID)
+{
+	CStatic* st = (CStatic*)(GetDlgItem(ID));
+	st->SetFont(&font_s);
 }
 
 void Cmfc_batteryDlg::DefaultScreen()
@@ -437,4 +460,11 @@ void Cmfc_batteryDlg::OnBnClickedRaCam3()
 	// TODO: 在此添加控件通知处理程序代码
 	this->used_cam = 4;
 	DefaultScreen();
+}
+
+
+void Cmfc_batteryDlg::OnBnClickedCheck1()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	color_battery = !color_battery;
 }
