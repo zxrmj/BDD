@@ -185,13 +185,20 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CvvImage.h" />
+    <ClInclude Include="m3Api.h" />
+    <ClInclude Include="m3ErrorCodes.h" />
+    <ClInclude Include="m3Ext.h" />
+    <ClInclude Include="m3Identify.h" />
     <ClInclude Include="mfc_battery.h" />
     <ClInclude Include="mfc_batteryDlg.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="xiApi.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CvvImage.cpp" />
     <ClCompile Include="mfc_battery.cpp" />
     <ClCompile Include="mfc_batteryDlg.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -213,4 +220,9 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="mfc_battery.rc" />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>

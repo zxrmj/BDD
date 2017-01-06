@@ -33,6 +33,24 @@
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CvvImage.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="xiApi.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="m3ErrorCodes.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="m3Identify.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="m3Api.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="m3Ext.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mfc_battery.cpp">
@@ -42,6 +60,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CvvImage.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
