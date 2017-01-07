@@ -160,11 +160,71 @@ void region::detectColourBattery(Mat & src, Mat & dst)
 }
 void region::detectNakedBattery(Mat & src, Mat & dst)
 {
-
+	int t1 = 140;
+	int t2 = 940;
+	Mat roi = src(Rect(src.cols / 2, 0, src.cols / 2, src.rows));
+	Mat gray;
+	cvtColor(roi, gray, CV_BGR2GRAY);
+	Mat grad_y, grad_abs_y;
+	Sobel(gray, grad_y, -1, 0, 1, 3);
+	convertScaleAbs(grad_y, grad_abs_y);
+	Mat binary;
+	cout << threshold(grad_abs_y, binary, 128, 255, ThresholdTypes::THRESH_BINARY | ThresholdTypes::THRESH_OTSU) << endl;
+	binary = binary(Rect(0, binary.rows * 5 / 6, binary.cols, binary.rows / 6));
+	morphologyEx(binary, binary, MORPH_CLOSE, getStructuringElement(MORPH_RECT, Size(20, 2)), Point(-1, -1), 2);
+	vector<vector<Point>> contours;
+	findContours(binary, contours, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
+	int lower_y = 0;
+	Rect lower_rect = Rect(0, 0, 0, 0);
+	for (int i = 0; i < contours.size(); i++)
+	{
+		if (contourArea(contours[i]) > 500)
+		{
+			Rect rect = boundingRect(contours[i]);
+			if (rect.y > lower_rect.y)
+			{
+				lower_rect = rect;
+				lower_y = i;
+			}
+		}
+	}
+	Point lower_pt = Point(0, 0);
+	for (int i = 0; i < contours[lower_y].size(); i++)
+	{
+		if (contours[lower_y][i].y > lower_pt.y)
+		{
+			lower_pt = contours[lower_y][i];
+		}
+	}
+	circle(binary, lower_pt, 5, Scalar(255), -1, LINE_AA);
+	try {
+		roi(Rect(lower_pt.x - t1, lower_pt.y + roi.rows * 5 / 6 - t2, t1 * 2, t2)).copyTo(dst);
+		rectangle(roi, Rect(lower_pt.x - t1, lower_pt.y + roi.rows * 5 / 6 - t2, t1 * 2, t2), Scalar(0, 255, 0), 1, LINE_AA);
+	}
+	catch (cv::Exception)
+	{
+		;
+	}
 }
 void region::detectFloorSideBattery(Mat & src, Mat & dst)
 {
+	src = src(Range(250, 700), Range(400, 850));
+	Mat gray;
+	cvtColor(src, gray, CV_BGR2GRAY);
 
+	Mat binary;
+	threshold(gray, binary, 128, 255, ThresholdTypes::THRESH_BINARY | ThresholdTypes::THRESH_OTSU);
+	vector<Point> pts;
+	for (int i = 0; i < binary.rows; i++) {
+		for (int j = 0; j < binary.cols; j++) {
+			if (binary.at<uchar>(Point(j, i)) == 255) {
+				pts.push_back(Point(j, i));
+			}
+		}
+	}
+	Rect rect = boundingRect(pts);
+	dst = src(rect);
+	return;
 }
 void region::detectLowSideBattery(Mat & src, Mat & dst)
 {

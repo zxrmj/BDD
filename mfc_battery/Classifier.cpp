@@ -31,7 +31,7 @@ Classifier::Classifier(int class_num, int feat_num, int hl_num, int hu_num)
 void Classifier::Predict(cv::Mat src, std::vector<std::pair<float, int>>& output,int order)
 {
 	Mat response;
-	response.create(1, 2, CV_32FC1);
+	response.create(1, ClassNumber ,CV_32FC1);
 	Network->predict(src,response);
 	output.clear();
 	for (int i = 0; i < response.cols; i++)
@@ -241,6 +241,8 @@ void Classifier::Train(std::string path, int test_flags, float test_rate, std::v
 		}
 		cout << "Test Over." << endl << "Pass Rate : " << (float)(test_passed) *100 / (float)(test_count) << "%" << endl;
 	}
+	Ptr<ml::TrainData> train_data = ml::TrainData::create(features, ml::ROW_SAMPLE, labels);
+	Network->train(train_data);
 	return;
 }
 

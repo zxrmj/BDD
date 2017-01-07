@@ -253,9 +253,11 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 	classifier1.Load("net1.xml");
 	classifier1.ExtractFeatureFunction = feature::extractColorFeature;
 	// 分类器2 : 未包膜电池
-	Classifier classifier2;
-	classifier2.Load("net2.xml");
+	Classifier classifier2(3, 40, 2, 48);
 	classifier2.ExtractFeatureFunction = feature::extractNakedFeature;
+	classifier2.Train("C://Users//Zengx//Documents//Visual Studio 2015//Projects//cv_battery//cv_ml_battery");
+	if (!classifier2.Network->isTrained())
+		return;
 	// 分类器3 : 侧面锈痕
 	Classifier classifier3;
 	classifier3.Load("net3.xml");
@@ -304,7 +306,7 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 				{
 					Mat battery;
 					region::detectNakedBattery(img, battery);
-					if (battery.data)
+					if (battery.cols && battery.rows)
 					{
 						vector<pair<float, int>> result;
 						Mat feat_vec = classifier2.ExtractFeatureFunction(battery);
