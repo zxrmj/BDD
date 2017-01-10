@@ -23,7 +23,8 @@ public:
 	int battery_count;
 	long long start_time;
 	bool color_battery;
-	protected:
+	bool capture_running;
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 	CMenu *dlg_menu; // 对话框菜单
 	CFont font;
@@ -31,6 +32,7 @@ public:
 	HDC hDC[3];
 	CRect rect[3];
 	CvvImage cimg;
+	
 	
 // 实现
 protected:
@@ -50,7 +52,10 @@ public:
 	void DefaultScreen();
 	void showStatic(CStatic* st, const char* str);
 	void showStatic(UINT nID, const char* str);
-	afx_msg void ChangeToCam1();
+	void ChangeCamera(int no);
+	afx_msg
+		
+	void ChangeToCam1();
 	afx_msg void ChangeToCam2();
 	afx_msg void ChangeToCam3();
 	afx_msg void ChangeToCam4();
@@ -58,4 +63,5 @@ public:
 	afx_msg void OnBnClickedRaCam2();
 	afx_msg void OnBnClickedRaCam3();
 	afx_msg void OnBnClickedCheck1();
+	afx_msg void OnBnClickedRecam();
 };

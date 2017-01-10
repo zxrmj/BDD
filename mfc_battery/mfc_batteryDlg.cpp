@@ -61,6 +61,7 @@ Cmfc_batteryDlg::Cmfc_batteryDlg(CWnd* pParent /*=NULL*/)
 	battery_count = 0;
 	start_time = 0;
 	color_battery = true;
+	capture_running = false;
 }
 
 void Cmfc_batteryDlg::DoDataExchange(CDataExchange* pDX)
@@ -68,6 +69,7 @@ void Cmfc_batteryDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 }
 
+// 消息映射
 BEGIN_MESSAGE_MAP(Cmfc_batteryDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
@@ -80,6 +82,8 @@ BEGIN_MESSAGE_MAP(Cmfc_batteryDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RA_CAM2, &Cmfc_batteryDlg::OnBnClickedRaCam2)
 	ON_BN_CLICKED(IDC_RA_CAM3, &Cmfc_batteryDlg::OnBnClickedRaCam3)
 	ON_BN_CLICKED(IDC_CHECK1, &Cmfc_batteryDlg::OnBnClickedCheck1)
+	ON_BN_CLICKED(IDC_RECAM, &Cmfc_batteryDlg::OnBnClickedRecam)
+	ON_BN_CLICKED(IDC_RECAM, &Cmfc_batteryDlg::OnBnClickedRecam)
 END_MESSAGE_MAP()
 
 
@@ -247,7 +251,7 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 	int current_speed = 0;
 	CStatic* st_count = (CStatic*)dlg->GetDlgItem(IDC_BTY_CNT);
 	CStatic* st_speed = (CStatic*)dlg->GetDlgItem(IDC_BTY_SPD);
-
+	dlg->capture_running = true;
 	// 分类器1 : 彩色包膜电池
 	Classifier classifier1;
 	classifier1.Load("net1.xml");
@@ -275,9 +279,11 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 			Mat img(Size(image.width, image.height), CV_8UC3);
 			memcpy(img.data, image.bp, image.width*image.height * 3);
 			dlg->battery_count++;
-			current_speed = dlg->battery_count / ((getTickCount() - dlg->start_time) / getTickFrequency());
+			//current_speed = dlg->battery_count / ((getTickCount() - dlg->start_time) / getTickFrequency());
+			current_speed = 1000* ((getTickCount() - dlg->start_time) / getTickFrequency()) / dlg->battery_count;
 			dlg->showStatic(st_count, string("Battery No. " + to_string(dlg->battery_count)).c_str());
-			dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed) + " frame per-second.").c_str());
+			//dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed) + " frame per-second.").c_str());
+			dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed) + " millsecond per-frame.").c_str());
 			// 绘制到对应的控件
 			switch (dlg->used_cam)
 			{
@@ -388,6 +394,7 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 		{
 			dlg->MessageBoxW(_T("Error 206:\nCamera lose connection!\n"));
 			dlg->showStatic(IDC_STATBAR, to_string(stat).c_str());
+			dlg->capture_running = false;
 			return;
 		}
 		
@@ -399,15 +406,19 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 }
 
 
-
+// 初始化HDC句柄，用于图像的绘制
 void Cmfc_batteryDlg::InitHDC()
 {
-	int uid[] = { IDC_SHOW1,IDC_SHOW2,IDC_SHOW3 };
+	// 控件ID
+	int UID[] = { 
+		IDC_SHOW1,
+		IDC_SHOW2,
+		IDC_SHOW3 };
 	for (int i = 0; i < 3; i++)
 	{
-		CDC *pDC = GetDlgItem(uid[i])->GetDC();
+		CDC *pDC = GetDlgItem(UID[i])->GetDC();
 		hDC[i] = pDC->GetSafeHdc();
-		GetDlgItem(uid[i])->GetClientRect(&rect[i]);
+		GetDlgItem(UID[i])->GetClientRect(&rect[i]);
 	}
 }
 
@@ -437,19 +448,24 @@ void Cmfc_batteryDlg::DefaultScreen()
 	DrawPicToHDC(splash, 2);
 }
 
+// 更换相机
+void Cmfc_batteryDlg::ChangeCamera(int no)
+{
+	this->used_cam = no;
+	DefaultScreen();
+}
+
 void Cmfc_batteryDlg::ChangeToCam1()
 {
 	// TODO: 在此添加命令处理程序代码
-	this->used_cam = 1;
-	DefaultScreen();
+	ChangeCamera(1);
 }
 
 
 void Cmfc_batteryDlg::ChangeToCam2()
 {
 	// TODO: 在此添加命令处理程序代码
-	this->used_cam = 1;
-	DefaultScreen();
+	ChangeCamera(1);
 
 }
 
@@ -457,24 +473,24 @@ void Cmfc_batteryDlg::ChangeToCam2()
 void Cmfc_batteryDlg::ChangeToCam3()
 {
 	// TODO: 在此添加命令处理程序代码
-	this->used_cam = 2;
-	DefaultScreen();
+	ChangeCamera(2);
 }
 
 
 void Cmfc_batteryDlg::ChangeToCam4()
 {
 	// TODO: 在此添加命令处理程序代码
-	this->used_cam = 4;
-	DefaultScreen();
+	ChangeCamera(4);
 }
 
+// 更改静态控件的文字
 void Cmfc_batteryDlg::showStatic(CStatic* st, const char* str)
 {
 	USES_CONVERSION;
 	st->SetWindowTextW(A2W(str));
 }
 
+// 更改静态控件的文字
 void Cmfc_batteryDlg::showStatic(UINT nID, const char * str)
 {
 	CStatic* st = (CStatic*)(this->GetDlgItem(nID));
@@ -488,29 +504,56 @@ void Cmfc_batteryDlg::showStatic(UINT nID, const char * str)
 void Cmfc_batteryDlg::OnBnClickedRaCam1()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	this->used_cam = 1;
-	DefaultScreen();
+	ChangeCamera(1);
 }
 
 
 void Cmfc_batteryDlg::OnBnClickedRaCam2()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	this->used_cam = 2;
-	DefaultScreen();
+	ChangeCamera(2);
 }
 
 
 void Cmfc_batteryDlg::OnBnClickedRaCam3()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	this->used_cam = 4;
-	DefaultScreen();
+	ChangeCamera(4);
 }
 
-
+// 更改当前是否为包膜电池
 void Cmfc_batteryDlg::OnBnClickedCheck1()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	color_battery = !color_battery;
+}
+
+// 重新初始化相机
+//void Cmfc_batteryDlg::OnBnClickedRecam()
+//{
+//	// TODO: 在此添加控件通知处理程序代码
+//	if (capture_running)
+//	{
+//		MessageBox(_T("相机已经在运行了"));
+//	}
+//	else
+//	{
+//		thread t1(onlineCaptureImage, this);
+//		t1.detach();
+//	}
+//}
+
+
+void Cmfc_batteryDlg::OnBnClickedRecam()
+{
+	// TODO: 在此添加控件通知处理程序代码
+		if (capture_running)
+		{
+			MessageBox(_T("相机已经在运行了"));
+		}
+		else
+		{
+			thread t1(onlineCaptureImage, this);
+			t1.detach();
+		}
 }

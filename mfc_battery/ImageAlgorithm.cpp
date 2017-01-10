@@ -3,9 +3,12 @@
 #include "cv_glcm.h"
 using namespace std;
 
-#pragma region 包膜电池相关算法
 
-// 包膜电池侧面特征提取算法
+/// <summary>
+/// 包膜电池侧面特征提取算法
+/// </summary>
+/// <param name="src">电池的源图像</param>
+/// <return>特征向量</return>
 Mat feature::extractColorFeature(Mat src)
 {
 	Mat hsi;
@@ -35,7 +38,11 @@ Mat feature::extractColorFeature(Mat src)
 	return feat_vec;
 }
 
-// 提取未包膜电池侧面特征的算法
+/// <summary>
+/// 未包膜电池侧面特征提取算法
+/// </summary>
+/// <param name="src">电池的源图像</param>
+/// <return>特征向量</return>
 Mat feature::extractNakedFeature(Mat src)
 {
 	Mat gray;
@@ -57,7 +64,11 @@ Mat feature::extractNakedFeature(Mat src)
 	return feat_vec;
 }
 
- // 提取盖板锈痕特征
+/// <summary>
+/// 盖板锈痕特征提取算法
+/// </summary>
+/// <param name="src">电池的源图像</param>
+/// <return>特征向量</return>
 Mat feature::extractRustyFeature(Mat src)
 {
 	Mat hsv;
@@ -81,7 +92,11 @@ Mat feature::extractRustyFeature(Mat src)
 	return feat_vec;
 }
 
-// 提取盖板凹陷特征
+/// <summary>
+/// 盖板凹陷特特征提取算法
+/// </summary>
+/// <param name="src">电池的源图像</param>
+/// <return>特征向量</return>
 Mat feature::extractUpSidePitFeature(Mat src)
 {
 	cvtColor(src, src, CV_BGR2GRAY);
@@ -100,18 +115,22 @@ Mat feature::extractUpSidePitFeature(Mat src)
 	return feat_vec;
 }
 
-// 包膜电池侧面定位及提取ROI区域算法
+/// <summary>
+/// 包膜电池侧面定位及提取ROI区域算法
+/// </summary>
+/// <param name="src">相机捕获的图像</param>
+/// <param name="dst">电池区域图像</param>
 void region::detectColourBattery(Mat & src, Mat & dst)
 {
-	int t1 = 60;
-	int t2 = 100;
-	int in = 5;
+	int t1 = 100;
+	int t2 = 200;
+	int in = 3;
 	Mat roi = src(Rect(src.cols / 2, 0, src.cols / 2, src.rows));
 	Mat hsi;
 	cvtColor(roi, hsi, CV_BGR2HSV);
 	vector<Mat> v_hsi;
 	split(hsi, v_hsi);
-	Mat hue = v_hsi[0];
+	Mat hue = v_hsi[2];
 	Mat binary = hue > t1 & hue < t2;
 	morphologyEx(binary, binary, MORPH_OPEN, getStructuringElement(MORPH_RECT, Size(9, 9)), Point(-1, -1), in);
 	vector<vector<Point>> contours;
@@ -158,6 +177,12 @@ void region::detectColourBattery(Mat & src, Mat & dst)
 		}
 	}
 }
+
+/// <summary>
+/// 未包膜电池侧面定位及提取ROI区域算法
+/// </summary>
+/// <param name="src">相机捕获的图像</param>
+/// <param name="dst">电池区域图像</param>
 void region::detectNakedBattery(Mat & src, Mat & dst)
 {
 	int t1 = 140;
@@ -206,6 +231,12 @@ void region::detectNakedBattery(Mat & src, Mat & dst)
 		;
 	}
 }
+
+/// <summary>
+/// 包膜电池顶面定位及提取ROI区域算法
+/// </summary>
+/// <param name="src">相机捕获的图像</param>
+/// <param name="dst">电池区域图像</param>
 void region::detectFloorSideBattery(Mat & src, Mat & dst)
 {
 	src = src(Range(250, 700), Range(400, 850));
@@ -226,9 +257,14 @@ void region::detectFloorSideBattery(Mat & src, Mat & dst)
 	dst = src(rect);
 	return;
 }
+
+/// <summary>
+/// 包膜电池底面定位及提取ROI区域算法
+/// </summary>
+/// <param name="src">相机捕获的图像</param>
+/// <param name="dst">电池区域图像</param>
 void region::detectLowSideBattery(Mat & src, Mat & dst)
 {
 
 }
-#pragma endregion
 
