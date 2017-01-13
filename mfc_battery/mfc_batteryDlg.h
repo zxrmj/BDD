@@ -24,6 +24,8 @@ public:
 	long long start_time;
 	bool color_battery;
 	bool capture_running;
+	HANDLE* camera_handle;
+	CComboBox* trigger_mode;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 	CMenu *dlg_menu; // 对话框菜单
@@ -64,4 +66,6 @@ public:
 	afx_msg void OnBnClickedRaCam3();
 	afx_msg void OnBnClickedCheck1();
 	afx_msg void OnBnClickedRecam();
+	afx_msg void OnCbnSelchangeTrimode();
+	afx_msg void OnBnClickedSwping();
 };

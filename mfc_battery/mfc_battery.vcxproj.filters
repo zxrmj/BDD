@@ -60,6 +60,12 @@
     <ClInclude Include="ImageAlgorithm.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ObjectDetector.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="BatteryDetector.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mfc_battery.cpp">
@@ -81,6 +87,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ImageAlgorithm.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjectDetector.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="BatteryDetector.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

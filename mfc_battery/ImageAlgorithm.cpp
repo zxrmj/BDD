@@ -185,7 +185,7 @@ void region::detectColourBattery(Mat & src, Mat & dst)
 /// <param name="dst">电池区域图像</param>
 void region::detectNakedBattery(Mat & src, Mat & dst)
 {
-	int t1 = 140;
+	/*int t1 = 140;
 	int t2 = 940;
 	Mat roi = src(Rect(src.cols / 2, 0, src.cols / 2, src.rows));
 	Mat gray;
@@ -229,7 +229,59 @@ void region::detectNakedBattery(Mat & src, Mat & dst)
 	catch (cv::Exception)
 	{
 		;
+	}*/
+	//battery = dstImage.clone();
+	vector<Mat> v_rgb;
+	split(src, v_rgb);
+	Mat &blue = v_rgb[2];
+	Canny(blue, blue, 100, 200, 3);
+	vector<vector<Point>> contours;
+	//color = Mat::zeros(dstImage.rows, dstImage.cols, CV_8UC3);
+	findContours(blue, contours, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
+	Rect max_rect;
+	int max_idx = -1;
+	int max_y = 0;
+	for (int i = 0; i < contours.size(); i++)
+	{
+		Rect rect = minAreaRect(contours[i]).boundingRect();
+		double len = rect.width;
+		if (len > 80)
+		{
+			//drawContours(color, contours, i, Scalar(/*rand() & 255, rand() & 255, rand() & 255*/0, 255, 0), 1, LINE_AA);
+
+			if (rect.y > 850)
+			{
+				if (rect.y > max_y)
+				{
+					max_y = rect.y;
+					max_idx = i;
+					max_rect = rect;
+				}
+
+				//rectangle(battery, rect, Scalar(0, 255, 0), 1, LINE_AA);
+			}
+		}
+
 	}
+	if (max_idx == -1)
+		return;
+	Point center = Point(max_rect.x + max_rect.width / 2, max_rect.y + max_rect.height);
+	Rect r = Rect(center.x - 200 / 2, center.y - 850, 200, 850);
+	Point points[] = { Point(r.x,r.y),Point(r.x + r.width,r.y),Point(r.x,r.y + r.height),Point(r.x + r.width,r.y + r.height) };
+	bool _inside = true;
+	for (int i = 0;i < 4; i++)
+	{
+		if (points[i].x < 0 || points[i].y < 0 || points[i].y >= src.rows || points[i].x >= src.cols)
+			_inside = false;
+	}
+	if (_inside)
+	{
+		src(r).copyTo(dst);
+	}
+	
+	rectangle(src, r, Scalar(0, 255, 0), 1, LINE_AA);
+	return;
+	
 }
 
 /// <summary>
@@ -268,3 +320,60 @@ void region::detectLowSideBattery(Mat & src, Mat & dst)
 
 }
 
+
+/// <summary>
+/// 建立图像拼接映射关系
+/// </summary>
+/// <param name="map_x">相机捕获的图像</param>
+/// <param name="map_y">电池区域图像</param>
+/// <param name="_width">电池区域图像</param>
+/// <param name="_height">电池区域图像</param>
+/// <param name="pos">电池区域图像</param>
+void joint::createJointMappingRelation(Mat & map_x, Mat & map_y, int _width, int _height, int pos)
+{
+	if (pos == JOINT_UL) // 左上
+	{
+		for (int i = 0; i < _height; i++)
+		{
+			for (int j = 0; j < _width; j++)
+			{
+				map_x.at<float>(i, j) = static_cast<float>(j);
+				map_y.at<float>(i, j) = static_cast<float>(i);
+			}
+		}
+	}
+	else if (pos == JOINT_UR)
+	{
+		for (int i = 0; i < _height; i++)
+		{
+			for (int j = 0; j < _width; j++)
+			{
+				map_x.at<float>(i, j) = static_cast<float>(j + _width);
+				map_y.at<float>(i, j) = static_cast<float>(i);
+			}
+		}
+	}
+	else if (pos == JOINT_LL)
+	{
+		for (int i = 0; i < _height; i++)
+		{
+			for (int j = 0; j < _width; j++)
+			{
+				map_x.at<float>(i, j) = static_cast<float>(j);
+				map_y.at<float>(i, j) = static_cast<float>(i + _height);
+			}
+		}
+	}
+	else if (pos == JOINT_LR)
+	{
+		for (int i = 0; i < _height; i++)
+		{
+			for (int j = 0; j < _width; j++)
+			{
+				map_x.at<float>(i, j) = static_cast<float>(j + _width);
+				map_y.at<float>(i, j) = static_cast<float>(i + _height);
+			}
+		}
+	}
+	
+}

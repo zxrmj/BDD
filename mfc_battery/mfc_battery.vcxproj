@@ -186,6 +186,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BatteryDetector.h" />
     <ClInclude Include="Classifier.h" />
     <ClInclude Include="CvvImage.h" />
     <ClInclude Include="cv_glcm.h" />
@@ -196,18 +197,21 @@
     <ClInclude Include="m3Identify.h" />
     <ClInclude Include="mfc_battery.h" />
     <ClInclude Include="mfc_batteryDlg.h" />
+    <ClInclude Include="ObjectDetector.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="xiApi.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BatteryDetector.cpp" />
     <ClCompile Include="Classifier.cpp" />
     <ClCompile Include="CvvImage.cpp" />
     <ClCompile Include="cv_glcm.cpp" />
     <ClCompile Include="ImageAlgorithm.cpp" />
     <ClCompile Include="mfc_battery.cpp" />
     <ClCompile Include="mfc_batteryDlg.cpp" />
+    <ClCompile Include="ObjectDetector.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

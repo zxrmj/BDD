@@ -14,7 +14,7 @@
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
-
+HANDLE xiH = NULL;
 void onlineCaptureImage(Cmfc_batteryDlg *dlg);
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
@@ -62,6 +62,8 @@ Cmfc_batteryDlg::Cmfc_batteryDlg(CWnd* pParent /*=NULL*/)
 	start_time = 0;
 	color_battery = true;
 	capture_running = false;
+	camera_handle = nullptr;
+	trigger_mode = 0;
 }
 
 void Cmfc_batteryDlg::DoDataExchange(CDataExchange* pDX)
@@ -84,6 +86,8 @@ BEGIN_MESSAGE_MAP(Cmfc_batteryDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_CHECK1, &Cmfc_batteryDlg::OnBnClickedCheck1)
 	ON_BN_CLICKED(IDC_RECAM, &Cmfc_batteryDlg::OnBnClickedRecam)
 	ON_BN_CLICKED(IDC_RECAM, &Cmfc_batteryDlg::OnBnClickedRecam)
+	ON_CBN_SELCHANGE(IDC_TRIMODE, &Cmfc_batteryDlg::OnCbnSelchangeTrimode)
+	ON_BN_CLICKED(IDC_SWPING, &Cmfc_batteryDlg::OnBnClickedSwping)
 END_MESSAGE_MAP()
 
 
@@ -119,8 +123,8 @@ BOOL Cmfc_batteryDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-	font.CreatePointFont(240, _T("Arial"));
-	font_s.CreatePointFont(160, _T("Arial"));
+	font.CreatePointFont(240, _T("Arial")); // 普通字体
+	font_s.CreatePointFont(160, _T("Arial")); // 小号字体
 	SetFontSFormat(IDC_DFT1);
 	SetFontSFormat(IDC_DFT2);
 	SetFontSFormat(IDC_DFT3);
@@ -131,6 +135,10 @@ BOOL Cmfc_batteryDlg::OnInitDialog()
 	SetFontSFormat(IDC_DFT8);
 	SetFontFormat(IDC_BTY_SPD);
 	SetFontFormat(IDC_BTY_CNT);
+
+	trigger_mode = (CComboBox*)GetDlgItem(IDC_TRIMODE);
+	trigger_mode->SetCurSel(0);
+
 	// Start thread:
 	thread t1(onlineCaptureImage, this);
 	t1.detach();
@@ -195,7 +203,8 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 	image.size = sizeof(XI_IMG);
 
 	// Camera's Handle
-	HANDLE xiH = NULL;
+	
+	dlg->camera_handle = &xiH;
 	XI_RETURN stat = XI_OK; // status of cam
 	// get number of devices.
 	DWORD dwNumberOfDevices = 0;
@@ -225,9 +234,9 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 		dlg->MessageBoxW(_T("Error 204:\nSet data format failed,please contact to sofeware supplier."));
 		return;
 	}
-//#define TRIGGER
+#define TRIGGER
 #ifdef TRIGGER
-	stat = xiSetParamInt(xiH, XI_PRM_TRG_SOURCE, 2);
+	stat = xiSetParamInt(xiH, XI_PRM_TRG_SOURCE, dlg->trigger_mode->GetCurSel());
 	if (stat != XI_OK)
 	{
 		dlg->MessageBoxW(_T("Error 204:\nSet data format failed,please contact to sofeware supplier."));
@@ -283,14 +292,18 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 			current_speed = 1000* ((getTickCount() - dlg->start_time) / getTickFrequency()) / dlg->battery_count;
 			dlg->showStatic(st_count, string("Battery No. " + to_string(dlg->battery_count)).c_str());
 			//dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed) + " frame per-second.").c_str());
-			dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed) + " millsecond per-frame.").c_str());
+			//dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed) + " millsecond per-frame.").c_str());
 			// 绘制到对应的控件
+			TickMeter tm;
+			tm.start();
 			switch (dlg->used_cam)
 			{
 			case 1:
 			{
 				if (dlg->color_battery)
 				{
+					// 彩色电池旧检测方式
+					/*
 					Mat battery;
 					region::detectColourBattery(img, battery);
 					if (battery.data)
@@ -307,6 +320,9 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 							dlg->showStatic(IDC_DFT1, "无缺陷");
 						}
 					}
+					*/
+
+					
 				}
 				else
 				{
@@ -370,6 +386,8 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 			default:
 				break;
 			}
+			tm.stop();
+			dlg->showStatic(st_speed, string("Current Speed: " + to_string(tm.getTimeMilli()) + " millsecond this-frame.").c_str());
 			
 		}
 		else if (stat == XI_TIMEOUT)
@@ -556,4 +574,29 @@ void Cmfc_batteryDlg::OnBnClickedRecam()
 			thread t1(onlineCaptureImage, this);
 			t1.detach();
 		}
+}
+
+
+void Cmfc_batteryDlg::OnCbnSelchangeTrimode()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	if (xiH != nullptr)
+	{
+#define TRIGGER
+#ifdef TRIGGER
+		XI_RETURN stat = xiSetParamInt(xiH, XI_PRM_TRG_SOURCE, trigger_mode->GetCurSel());
+		if (stat != XI_OK)
+		{
+			this->MessageBoxW(_T("Error 204:\nSet data format failed,please contact to sofeware supplier."));
+			return;
+		}
+#endif // TRIGGER
+	}
+}
+
+
+void Cmfc_batteryDlg::OnBnClickedSwping()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
 }
