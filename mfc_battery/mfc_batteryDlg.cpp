@@ -137,7 +137,7 @@ BOOL Cmfc_batteryDlg::OnInitDialog()
 	SetFontFormat(IDC_BTY_CNT);
 
 	trigger_mode = (CComboBox*)GetDlgItem(IDC_TRIMODE);
-	trigger_mode->SetCurSel(0);
+	trigger_mode->SetCurSel(1);
 
 	// Start thread:
 	thread t1(onlineCaptureImage, this);
@@ -236,7 +236,8 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 	}
 #define TRIGGER
 #ifdef TRIGGER
-	stat = xiSetParamInt(xiH, XI_PRM_TRG_SOURCE, dlg->trigger_mode->GetCurSel());
+	int _trigger = dlg->trigger_mode->GetCurSel();
+	stat = xiSetParamInt(xiH, XI_PRM_TRG_SOURCE, _trigger);
 	if (stat != XI_OK)
 	{
 		dlg->MessageBoxW(_T("Error 204:\nSet data format failed,please contact to sofeware supplier."));
@@ -266,9 +267,9 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 	classifier1.Load("net1.xml");
 	classifier1.ExtractFeatureFunction = feature::extractColorFeature;
 	// 分类器2 : 未包膜电池
-	Classifier classifier2(3, 40, 2, 48);
+	Classifier classifier2(2, 6, 2, 24);
 	classifier2.ExtractFeatureFunction = feature::extractNakedFeature;
-	classifier2.Train("C://Users//Zengx//Documents//Visual Studio 2015//Projects//cv_battery//cv_ml_battery");
+	classifier2.Train("C://Users//Zengx//Documents//Visual Studio 2015//Projects//cv_battery//cv_ml_battery//white_light3");
 	if (!classifier2.Network->isTrained())
 		return;
 	// 分类器3 : 侧面锈痕
@@ -280,6 +281,16 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 	classifier4.Load("net4.xml");
 	classifier4.ExtractFeatureFunction = feature::extractUpSidePitFeature;
 
+	int frame_count = 0;
+	int frame_max_count = 0;
+	if (_trigger)
+	{
+		frame_max_count = 3;
+	}
+	
+	bool naked_battery_results = false;
+	Mat naked_battery_image;
+	dlg->battery_count = 0;
 	for (;;)
 	{
 		stat = xiGetImage(xiH, 1000, &image);
@@ -287,10 +298,11 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 		{
 			Mat img(Size(image.width, image.height), CV_8UC3);
 			memcpy(img.data, image.bp, image.width*image.height * 3);
-			dlg->battery_count++;
+			//dlg->battery_count++;
+			
 			//current_speed = dlg->battery_count / ((getTickCount() - dlg->start_time) / getTickFrequency());
-			current_speed = 1000* ((getTickCount() - dlg->start_time) / getTickFrequency()) / dlg->battery_count;
-			dlg->showStatic(st_count, string("Battery No. " + to_string(dlg->battery_count)).c_str());
+			//current_speed = 1000* ((getTickCount() - dlg->start_time) / getTickFrequency()) / dlg->battery_count;
+			
 			//dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed) + " frame per-second.").c_str());
 			//dlg->showStatic(st_speed, string("Current Speed. " + to_string(current_speed) + " millsecond per-frame.").c_str());
 			// 绘制到对应的控件
@@ -302,7 +314,9 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 			{
 				if (dlg->color_battery)
 				{
-					// 彩色电池旧检测方式
+
+
+					// legacies
 					/*
 					Mat battery;
 					region::detectColourBattery(img, battery);
@@ -332,7 +346,60 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 					{
 						vector<pair<float, int>> result;
 						Mat feat_vec = classifier2.ExtractFeatureFunction(battery);
-						classifier2.Predict(feat_vec, result, RESULT_ORDER::ORDER_DECENDING);
+						classifier2.Predict(feat_vec, result, RESULT_ORDER::ORDER_NORMAL);
+						ostringstream ss;
+						ss << "[";
+						for (int k = 0; k < result.size(); k++)
+						{
+							ss << result[k].second << ":" << result[k].first << "\t";
+						}
+						ss << "]";
+						string str = ss.str();
+						dlg->showStatic(IDC_DFT8, str.c_str());
+#ifdef TRIGGER
+						// 使用触发器
+						if (_trigger)
+						{
+							if (result[1].first > 0.75)
+							{
+								naked_battery_results = frame_count;
+								naked_battery_image = img;
+							}
+							frame_count++;
+							if (frame_count >= frame_max_count)
+							{							
+								if (naked_battery_results)
+								{
+									dlg->showStatic(IDC_DFT2, "侧面凹坑缺陷");
+									dlg->DrawPicToHDC(naked_battery_image, 0);
+								}
+								else
+								{
+									dlg->showStatic(IDC_DFT2, "无缺陷");
+									dlg->DrawPicToHDC(img, 0);
+								}
+								naked_battery_results = false;
+							}
+							else
+							{
+								dlg->DrawPicToHDC(img, 0);
+							}
+						}
+						// 不使用触发器
+						else
+						{
+							if (result[1].first > 0.75)
+							{
+								dlg->showStatic(IDC_DFT2, "侧面凹坑缺陷");
+							}
+							else
+							{
+								dlg->showStatic(IDC_DFT2, "无缺陷");
+							}
+						}
+
+						
+#else
 						if (result[0].second != 0)
 						{
 							dlg->showStatic(IDC_DFT2, "侧面凹坑缺陷");
@@ -341,9 +408,17 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 						{
 							dlg->showStatic(IDC_DFT2, "无缺陷");
 						}
+#endif // TRIGGER
+						
+						
 					}
 				}
-				dlg->DrawPicToHDC(img, 0);
+				if (!_trigger)
+				{
+					dlg->DrawPicToHDC(img, 0);
+				}
+				
+				
 				break;
 			}
 			case 2:
@@ -387,7 +462,9 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 				break;
 			}
 			tm.stop();
-			dlg->showStatic(st_speed, string("Current Speed: " + to_string(tm.getTimeMilli()) + " millsecond this-frame.").c_str());
+
+			dlg->showStatic(st_count, string("Battery " + to_string(dlg->battery_count) + " Frame " + to_string(frame_count)).c_str());
+			dlg->showStatic(st_speed, string("Current Speed: " + to_string(tm.getTimeMilli()) + " millisecond").c_str());
 			
 		}
 		else if (stat == XI_TIMEOUT)
@@ -416,9 +493,6 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 			return;
 		}
 		
-	/*	int64 time1 = getTickCount() - time0;
-		double speed =1000* time1 / getTickFrequency();
-		dlg->showStatic(st_speed, string("Current Speed. " + to_string(speed)).c_str());*/
 	}
 
 }
@@ -547,21 +621,6 @@ void Cmfc_batteryDlg::OnBnClickedCheck1()
 }
 
 // 重新初始化相机
-//void Cmfc_batteryDlg::OnBnClickedRecam()
-//{
-//	// TODO: 在此添加控件通知处理程序代码
-//	if (capture_running)
-//	{
-//		MessageBox(_T("相机已经在运行了"));
-//	}
-//	else
-//	{
-//		thread t1(onlineCaptureImage, this);
-//		t1.detach();
-//	}
-//}
-
-
 void Cmfc_batteryDlg::OnBnClickedRecam()
 {
 	// TODO: 在此添加控件通知处理程序代码

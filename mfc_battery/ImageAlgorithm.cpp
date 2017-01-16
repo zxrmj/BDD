@@ -45,7 +45,7 @@ Mat feature::extractColorFeature(Mat src)
 /// <return>ÌØÕ÷ÏòÁ¿</return>
 Mat feature::extractNakedFeature(Mat src)
 {
-	Mat gray;
+	/*Mat gray;
 	cvtColor(src, gray, CV_BGR2GRAY);
 	resize(gray, gray, Size(200, 800));
 	Mat grad_y, sobel;
@@ -57,6 +57,25 @@ Mat feature::extractNakedFeature(Mat src)
 	for (int i = 0; i < gray.rows; i += 20)
 	{
 		Mat sub_mat = sobel(Rect(0, i, gray.cols, 20));
+		Mat glcm_mat = GrayCoMatrix::createGLCM(sub_mat, GrayCoMatrix::GLCM_ANGLE_VERTICAL);
+		Mat return_mat = GrayCoMatrix::calcGLCMFeatureVector(glcm_mat);
+		*feat_vec_iter++ = return_mat.at<double>(0, 3);
+	}
+	return feat_vec;*/
+
+	Mat gray;
+	cvtColor(src, gray, CV_BGR2GRAY);
+	resize(gray, gray, Size(200, 840));
+	Mat grad_y, sobel;
+	Sobel(gray, grad_y, -1, 0, 1, 3);
+	convertScaleAbs(grad_y, sobel);
+	Mat feat_vec;
+	feat_vec.create(1, 6, CV_32FC1);
+	Mat_<float>::iterator feat_vec_iter = feat_vec.begin<float>();
+	int _step = 840 / 6;
+	for (int i = 0; i < gray.rows; i += _step)
+	{
+		Mat sub_mat = sobel(Rect(0, i, gray.cols, _step));
 		Mat glcm_mat = GrayCoMatrix::createGLCM(sub_mat, GrayCoMatrix::GLCM_ANGLE_VERTICAL);
 		Mat return_mat = GrayCoMatrix::calcGLCMFeatureVector(glcm_mat);
 		*feat_vec_iter++ = return_mat.at<double>(0, 3);
@@ -240,7 +259,7 @@ void region::detectNakedBattery(Mat & src, Mat & dst)
 	findContours(blue, contours, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
 	Rect max_rect;
 	int max_idx = -1;
-	int max_y = 0;
+	int max_x = 721;
 	for (int i = 0; i < contours.size(); i++)
 	{
 		Rect rect = minAreaRect(contours[i]).boundingRect();
@@ -251,9 +270,9 @@ void region::detectNakedBattery(Mat & src, Mat & dst)
 
 			if (rect.y > 850)
 			{
-				if (rect.y > max_y)
+				if (abs(rect.x - 720) < max_x)
 				{
-					max_y = rect.y;
+					max_x = abs(rect.x - 720);
 					max_idx = i;
 					max_rect = rect;
 				}

@@ -145,6 +145,7 @@ void Classifier::Train(std::string path, int test_flags, float test_rate, std::v
 	Network->setBackpropWeightScale(0.1);
 	Network->setBackpropMomentumScale(0.1);
 	Network->setActivationFunction(ml::ANN_MLP::ActivationFunctions::SIGMOID_SYM, 1, 1);
+	Network->setTermCriteria(TermCriteria(TermCriteria::EPS, 10000, 0.001));
 	// ²âÊÔ
 	if (flag_test)
 	{
