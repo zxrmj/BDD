@@ -205,6 +205,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BatteryDetector.cpp" />
+    <ClCompile Include="BatteryTopDectector.cpp" />
     <ClCompile Include="Classifier.cpp" />
     <ClCompile Include="CvvImage.cpp" />
     <ClCompile Include="cv_glcm.cpp" />

@@ -1,5 +1,6 @@
 #pragma once
 #include <opencv.hpp>
+#include "BatteryTopDectector.h"
 using namespace cv;
 namespace feature 
 {
@@ -13,7 +14,8 @@ namespace region
 {
 	void detectColourBattery(Mat &src, Mat &dst);
 	void detectNakedBattery(Mat &src,Mat &dst);
-	void detectFloorSideBattery(Mat &src, Mat &dst);
+	void detectTopSideBattery(Mat & src, Mat & dst, BatteryTopDectector * detector);
+	//void detectFloorSideBattery(Mat &src, Mat &dst);
 	void detectLowSideBattery(Mat &src, Mat &dst);
 } // REGION OF INTERSTING EXTRACTION
 

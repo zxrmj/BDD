@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "ImageAlgorithm.h"
+#include "BatteryTopDectector.h"
 #include "cv_glcm.h"
 using namespace std;
 
@@ -204,6 +205,7 @@ void region::detectColourBattery(Mat & src, Mat & dst)
 /// <param name="dst">电池区域图像</param>
 void region::detectNakedBattery(Mat & src, Mat & dst)
 {
+	
 	/*int t1 = 140;
 	int t2 = 940;
 	Mat roi = src(Rect(src.cols / 2, 0, src.cols / 2, src.rows));
@@ -308,9 +310,10 @@ void region::detectNakedBattery(Mat & src, Mat & dst)
 /// </summary>
 /// <param name="src">相机捕获的图像</param>
 /// <param name="dst">电池区域图像</param>
-void region::detectFloorSideBattery(Mat & src, Mat & dst)
+void region::detectTopSideBattery(Mat & src, Mat & dst, BatteryTopDectector *detector)
 {
-	src = src(Range(250, 700), Range(400, 850));
+	detector->Detect(src, dst);
+	/*src = src(Range(250, 700), Range(400, 850));
 	Mat gray;
 	cvtColor(src, gray, CV_BGR2GRAY);
 
@@ -326,7 +329,7 @@ void region::detectFloorSideBattery(Mat & src, Mat & dst)
 	}
 	Rect rect = boundingRect(pts);
 	dst = src(rect);
-	return;
+	return;*/
 }
 
 /// <summary>

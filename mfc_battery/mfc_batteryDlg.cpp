@@ -9,6 +9,7 @@
 #include "xiApi.h"
 #include "Classifier.h"
 #include "ImageAlgorithm.h"
+#include "BatteryTopDectector.h"
 #pragma comment(lib,"m3apiX64.lib")
 
 #ifdef _DEBUG
@@ -281,6 +282,11 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 	classifier4.Load("net4.xml");
 	classifier4.ExtractFeatureFunction = feature::extractUpSidePitFeature;
 
+	// 顶面定位器：顶面
+	BatteryTopDectector detector;
+	Mat detector_template = imread("temp.bmp",IMREAD_GRAYSCALE);
+	detector.SetTemplate(detector_template);
+
 	int frame_count = 0;
 	int frame_max_count = 0;
 	if (_trigger)
@@ -317,7 +323,7 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 
 
 					// legacies
-					/*
+					
 					Mat battery;
 					region::detectColourBattery(img, battery);
 					if (battery.data)
@@ -334,7 +340,7 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 							dlg->showStatic(IDC_DFT1, "无缺陷");
 						}
 					}
-					*/
+					
 
 					
 				}
@@ -366,7 +372,7 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 								naked_battery_image = img;
 							}
 							frame_count++;
-							if (frame_count >= frame_max_count)
+							if (frame_count > frame_max_count)
 							{							
 								if (naked_battery_results)
 								{
@@ -424,11 +430,12 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 			case 2:
 			{
 				Mat battery;
-				region::detectNakedBattery(img, battery);
+				//region::detectNakedBattery(img, battery);
+				detector.Detect(img, battery);
 				if (battery.data)
 				{
 					vector<pair<float, int>> result;
-					Mat feat_vec = classifier2.ExtractFeatureFunction(battery);
+					Mat feat_vec = classifier3.ExtractFeatureFunction(battery);
 					classifier3.Predict(feat_vec, result, RESULT_ORDER::ORDER_DECENDING);
 					if (result[0].second != 0)
 					{
@@ -462,9 +469,13 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 				break;
 			}
 			tm.stop();
-
 			dlg->showStatic(st_count, string("Battery " + to_string(dlg->battery_count) + " Frame " + to_string(frame_count)).c_str());
 			dlg->showStatic(st_speed, string("Current Speed: " + to_string(tm.getTimeMilli()) + " millisecond").c_str());
+			if (frame_count > frame_max_count)
+			{
+				dlg->battery_count++;
+				frame_count = 0;
+			}
 			
 		}
 		else if (stat == XI_TIMEOUT)

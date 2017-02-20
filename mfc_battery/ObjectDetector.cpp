@@ -73,15 +73,15 @@ void ObjectDetector::SetCannyHighThreshold(int val)
 
 vector<RotatedRect> ObjectDetector::Detect(Mat src)
 {
-	TickMeter tm;
+	//TickMeter tm;
 	vector<Vec4f> position;
 	if (use_gpu)
 	{
 		cuda::GpuMat d_image(src);
 		cuda::GpuMat d_position;
-		tm.start();
+		/*tm.start();*/
 		ballard->detect(d_image, d_position);
-		tm.stop();
+		//tm.stop();
 		if (d_position.data)
 		{
 			d_position.download(position);
@@ -89,12 +89,12 @@ vector<RotatedRect> ObjectDetector::Detect(Mat src)
 	}
 	else
 	{
-		tm.start();
+		//tm.start();
 		ballard->detect(src, position);
-		tm.stop();
+		//tm.stop();
 	}
-	cout << "Found : " << position.size() << " objects" << endl;
-	cout << "Detection time : " << tm.getTimeMilli() << " ms" << endl;
+	/*cout << "Found : " << position.size() << " objects" << endl;
+	cout << "Detection time : " << tm.getTimeMilli() << " ms" << endl;*/
 	vector<RotatedRect> v_rect;
 	for (int i = 0; i< position.size(); i++)
 	{
