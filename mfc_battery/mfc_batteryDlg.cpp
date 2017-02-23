@@ -283,7 +283,7 @@ void onlineCaptureImage(Cmfc_batteryDlg *dlg)
 	classifier4.ExtractFeatureFunction = feature::extractUpSidePitFeature;
 
 	// 顶面定位器：顶面
-	BatteryTopDectector detector;
+	BatteryTopDetector detector;
 	Mat detector_template = imread("temp.bmp",IMREAD_GRAYSCALE);
 	detector.SetTemplate(detector_template);
 

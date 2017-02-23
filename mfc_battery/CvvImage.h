@@ -6,7 +6,7 @@
 #include <opencv.hpp>
 using namespace cv;
 // CvvImage类的定义，CvvImage用于将Opencv的Mat类图像绘制到MFC图像控件
-/* CvvImage class definition */
+// 这个类原包含于OpenCV2.2以下版本，2.2版本更新后将该类删去
 class  CvvImage
 {
 public:

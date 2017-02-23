@@ -3,7 +3,7 @@
 
 
 
-BatteryTopDectector::BatteryTopDectector()
+BatteryTopDetector::BatteryTopDetector()
 	:ObjectDetector()
 {
 	this->InitDetector(true);
@@ -15,7 +15,7 @@ BatteryTopDectector::BatteryTopDectector()
 }
 
 
-void BatteryTopDectector::Detect(Mat & src, Mat & dst)
+void BatteryTopDetector::Detect(Mat & src, Mat & dst)
 {
 	vector<RotatedRect> v_rect;
 	if (src.channels() == 3)
@@ -63,6 +63,6 @@ void BatteryTopDectector::Detect(Mat & src, Mat & dst)
 }
 
 
-BatteryTopDectector::~BatteryTopDectector()
+BatteryTopDetector::~BatteryTopDetector()
 {
 }

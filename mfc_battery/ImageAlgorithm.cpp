@@ -310,7 +310,7 @@ void region::detectNakedBattery(Mat & src, Mat & dst)
 /// </summary>
 /// <param name="src">相机捕获的图像</param>
 /// <param name="dst">电池区域图像</param>
-void region::detectTopSideBattery(Mat & src, Mat & dst, BatteryTopDectector *detector)
+void region::detectTopSideBattery(Mat & src, Mat & dst, BatteryTopDetector *detector)
 {
 	detector->Detect(src, dst);
 	/*src = src(Range(250, 700), Range(400, 850));

@@ -1,11 +1,11 @@
 #pragma once
 #include "ObjectDetector.h"
-class BatteryTopDectector :
+class BatteryTopDetector :
 	public ObjectDetector
 {
 public:
-	BatteryTopDectector();
+	BatteryTopDetector();
 	void Detect(Mat &src, Mat &dst);
-	~BatteryTopDectector();
+	~BatteryTopDetector();
 };
 
