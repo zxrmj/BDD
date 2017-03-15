@@ -13,6 +13,7 @@ GrayCoMatrix::~GrayCoMatrix()
 
 Mat GrayCoMatrix::createGLCM(Mat srcImage, int16_t angle)
 {
+	srcImage = srcImage.clone();
 	if (!srcImage.data)
 		return Mat();
 	if ((angle % 45) || angle > 135)
@@ -64,6 +65,8 @@ Mat GrayCoMatrix::createGLCM(Mat srcImage, int16_t angle)
 			for (size_t j = 0; j < srcImage.cols - gray_distance; j++)
 			{
 				upt2 = srcImage.at<uchar>(i, j + gray_distance);
+				//cout << "Up1," << (int)upt1 << "Up2," << (int)upt2 << endl;
+				//system("pause");
 				glcm.at<float>(upt1, upt2) += 1;
 				upt1 = upt2;
 			}
@@ -80,7 +83,9 @@ Mat GrayCoMatrix::createGLCM(Mat srcImage, int16_t angle)
 				*fpt1 = f_sum;
 				*fpt2 = f_sum;
 			}
-		}	
+		}
+	/*	cout << glcm << endl;
+		system("pause");*/
 		//¼ÆËãP(i,j) = 1/R * ¦Ç(i,j)
 		float R = 2 * (srcImage.rows * (srcImage.cols - gray_distance));
 		for (size_t i = 0; i < glcm.rows; i++)
@@ -162,7 +167,6 @@ Mat GrayCoMatrix::createGLCM(Mat srcImage, int16_t angle)
 				}
 			}
 		}*/
-		cout << srcImage << endl;
 		uchar upt1, upt2;
 		for (int i = gray_distance; i < srcImage.cols; i++)
 		{

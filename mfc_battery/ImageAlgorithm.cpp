@@ -84,6 +84,49 @@ Mat feature::extractNakedFeature(Mat src)
 	return feat_vec;
 }
 
+Mat feature::extractNakedLocalFeature(Mat src)
+{
+	auto entropy_gray = [](Mat src) -> float {
+		float hist[256] = { 0 };
+		for (int i = 0; i < src.total(); i++)
+			hist[*(src.data + i)]++;
+		float e = 0.0;
+		for (int i = 0; i < 256; i++)
+		{
+			float r = hist[i] / (float)src.total();
+			if (r)
+				e -= r*log2f(r);
+		}
+		return e;
+	};
+	if (src.channels() != 1)
+		return Mat();
+	Mat sobel;
+	Mat morph;
+	Sobel(src, sobel, -1, 0, 1, 5);
+	convertScaleAbs(sobel, sobel);
+	GaussianBlur(sobel, sobel, Size(5, 5), 1.2);
+	threshold(sobel, morph, 128, 255, THRESH_TOZERO);
+	morphologyEx(morph, morph, MORPH_OPEN, getStructuringElement(MORPH_ELLIPSE, Size(3, 3)), Point(-1, -1), 3);
+	Mat feat_vec = Mat::zeros(1, 8, CV_32FC1);
+	Mat v_glcm = GrayCoMatrix::createGLCM(sobel, GrayCoMatrix::GLCM_ANGLE_VERTICAL);
+	Mat h_glcm = GrayCoMatrix::createGLCM(sobel, GrayCoMatrix::GLCM_ANGLE_HORIZATION);
+	Mat v_features = GrayCoMatrix::calcGLCMFeatureVector(v_glcm);
+	Mat h_features = GrayCoMatrix::calcGLCMFeatureVector(h_glcm);
+	feat_vec.at<float>(0, 0) = entropy_gray(sobel);
+	feat_vec.at<float>(0, 1) = v_features.at<double>(0, 2);
+	feat_vec.at<float>(0, 2) = v_features.at<double>(0, 3);
+	feat_vec.at<float>(0, 3) = h_features.at<double>(0, 2);
+	feat_vec.at<float>(0, 4) = h_features.at<double>(0, 3);
+
+	v_glcm = GrayCoMatrix::createGLCM(sobel, GrayCoMatrix::GLCM_ANGLE_VERTICAL);
+	v_features = GrayCoMatrix::calcGLCMFeatureVector(v_glcm);
+	feat_vec.at<float>(0, 5) = entropy_gray(sobel);
+	feat_vec.at<float>(0, 6) = v_features.at<double>(0, 2);
+	feat_vec.at<float>(0, 7) = v_features.at<double>(0, 3);
+	return feat_vec;
+}
+
 /// <summary>
 /// 盖板锈痕特征提取算法
 /// </summary>
@@ -91,23 +134,31 @@ Mat feature::extractNakedFeature(Mat src)
 /// <return>特征向量</return>
 Mat feature::extractRustyFeature(Mat src)
 {
-	Mat hsv;
-	cvtColor(src, hsv, CV_BGR2HSV);
-	vector<Mat> v_hsv;
-	split(hsv, v_hsv);
-	Mat hue_img = v_hsv[0];
+	Mat sobel;
+	auto _sobel = [](Mat src) -> Mat {
+		Mat grad_x;
+		Mat grad_y;
+		Sobel(src, grad_x, -1, 1, 0, 3);
+		Sobel(src, grad_y, -1, 0, 1, 3);
+		convertScaleAbs(grad_x, grad_x);
+		convertScaleAbs(grad_y, grad_y);
+		Mat sobel;
+		addWeighted(grad_x, 0.5, grad_y, 0.5, 0, sobel);
+		return sobel;
+	};
+	sobel = _sobel(src);
 	Mat feat_vec = Mat::zeros(1, 24, CV_32FC1);
-	for (int i = 0; i < hue_img.rows; i++)
+	for (int i = 0; i < sobel.rows; i++)
 	{
-		for (int j = 0; j < hue_img.cols; j++)
+		for (int j = 0; j < sobel.cols; j++)
 		{
-			uchar val = hue_img.at<uchar>(i, j);
+			uchar val = sobel.at<uchar>(i, j);
 			feat_vec.at<float>(0, val / 10)++;
 		}
 	}
 	for (int i = 0; i < feat_vec.cols; i++)
 	{
-		feat_vec.at<float>(0, i) /= (hue_img.rows * hue_img.cols);
+		feat_vec.at<float>(0, i) /= (sobel.rows * sobel.cols);
 	}
 	return feat_vec;
 }
@@ -119,7 +170,6 @@ Mat feature::extractRustyFeature(Mat src)
 /// <return>特征向量</return>
 Mat feature::extractUpSidePitFeature(Mat src)
 {
-	cvtColor(src, src, CV_BGR2GRAY);
 	resize(src, src, Size(200, 200));
 	Point center(100, 100);
 	Mat mask = Mat::zeros(200, 200, CV_8UC1);
@@ -203,106 +253,75 @@ void region::detectColourBattery(Mat & src, Mat & dst)
 /// </summary>
 /// <param name="src">相机捕获的图像</param>
 /// <param name="dst">电池区域图像</param>
-void region::detectNakedBattery(Mat & src, Mat & dst)
+void region::detectNakedBattery(Mat & src, Mat & dst, Point &ru)
 {
+	int low_thresh = 200;
+	int high_thresh = 255;
+	int battery_height = 800;
+	int battery_width = 200;
+	int upper_line = 100;
+	int lower_line = 200;
+	int left_line = 500;
+	int right_line = 850;
 	
-	/*int t1 = 140;
-	int t2 = 940;
-	Mat roi = src(Rect(src.cols / 2, 0, src.cols / 2, src.rows));
 	Mat gray;
-	cvtColor(roi, gray, CV_BGR2GRAY);
-	Mat grad_y, grad_abs_y;
-	Sobel(gray, grad_y, -1, 0, 1, 3);
-	convertScaleAbs(grad_y, grad_abs_y);
-	Mat binary;
-	cout << threshold(grad_abs_y, binary, 128, 255, ThresholdTypes::THRESH_BINARY | ThresholdTypes::THRESH_OTSU) << endl;
-	binary = binary(Rect(0, binary.rows * 5 / 6, binary.cols, binary.rows / 6));
-	morphologyEx(binary, binary, MORPH_CLOSE, getStructuringElement(MORPH_RECT, Size(20, 2)), Point(-1, -1), 2);
+	if (src.channels() == 3)
+		cvtColor(src, gray, CV_BGR2GRAY);
+	else
+	{
+		gray = src;
+	}
+
+	Rect rect(Point(left_line, upper_line), Point(right_line, lower_line));
+	Mat canny;
+	Canny(gray, canny, low_thresh, high_thresh);
+
 	vector<vector<Point>> contours;
-	findContours(binary, contours, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
-	int lower_y = 0;
-	Rect lower_rect = Rect(0, 0, 0, 0);
+	findContours(canny, contours, RetrievalModes::RETR_CCOMP, ContourApproximationModes::CHAIN_APPROX_SIMPLE);
+	int highest_line_idx = -1;
+	int higest_line = gray.rows;
+
+	auto findHighestPoint = [](vector<Point> vp)->Point {
+		Rect rect = boundingRect(vp);
+		Point p;
+		p.x = rect.x + rect.width / 2;
+		p.y = rect.y;
+		return p;
+	};
+
+	auto batteryBoundingRect = [](Point center, int width, int height) -> Rect {
+		Rect rect;
+		rect.x = center.x - width / 2;
+		rect.width = width;
+		rect.y = center.y;
+		rect.height = height;
+		return rect;
+	};
+
 	for (int i = 0; i < contours.size(); i++)
 	{
-		if (contourArea(contours[i]) > 500)
+		RotatedRect rotated = minAreaRect(contours[i]);
+		Point center = rotated.center;
+		if (rect.contains(center) && rotated.boundingRect().width > 30)
 		{
-			Rect rect = boundingRect(contours[i]);
-			if (rect.y > lower_rect.y)
+			if (center.y < higest_line)
 			{
-				lower_rect = rect;
-				lower_y = i;
+				higest_line = center.y;
+				highest_line_idx = i;
 			}
 		}
 	}
-	Point lower_pt = Point(0, 0);
-	for (int i = 0; i < contours[lower_y].size(); i++)
-	{
-		if (contours[lower_y][i].y > lower_pt.y)
-		{
-			lower_pt = contours[lower_y][i];
-		}
-	}
-	circle(binary, lower_pt, 5, Scalar(255), -1, LINE_AA);
-	try {
-		roi(Rect(lower_pt.x - t1, lower_pt.y + roi.rows * 5 / 6 - t2, t1 * 2, t2)).copyTo(dst);
-		rectangle(roi, Rect(lower_pt.x - t1, lower_pt.y + roi.rows * 5 / 6 - t2, t1 * 2, t2), Scalar(0, 255, 0), 1, LINE_AA);
-	}
-	catch (cv::Exception)
-	{
-		;
-	}*/
-	//battery = dstImage.clone();
-	vector<Mat> v_rgb;
-	split(src, v_rgb);
-	Mat &blue = v_rgb[2];
-	Canny(blue, blue, 100, 200, 3);
-	vector<vector<Point>> contours;
-	//color = Mat::zeros(dstImage.rows, dstImage.cols, CV_8UC3);
-	findContours(blue, contours, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
-	Rect max_rect;
-	int max_idx = -1;
-	int max_x = 721;
-	for (int i = 0; i < contours.size(); i++)
-	{
-		Rect rect = minAreaRect(contours[i]).boundingRect();
-		double len = rect.width;
-		if (len > 80)
-		{
-			//drawContours(color, contours, i, Scalar(/*rand() & 255, rand() & 255, rand() & 255*/0, 255, 0), 1, LINE_AA);
 
-			if (rect.y > 850)
-			{
-				if (abs(rect.x - 720) < max_x)
-				{
-					max_x = abs(rect.x - 720);
-					max_idx = i;
-					max_rect = rect;
-				}
-
-				//rectangle(battery, rect, Scalar(0, 255, 0), 1, LINE_AA);
-			}
-		}
-
-	}
-	if (max_idx == -1)
+	if (highest_line_idx == -1)
 		return;
-	Point center = Point(max_rect.x + max_rect.width / 2, max_rect.y + max_rect.height);
-	Rect r = Rect(center.x - 200 / 2, center.y - 850, 200, 850);
-	Point points[] = { Point(r.x,r.y),Point(r.x + r.width,r.y),Point(r.x,r.y + r.height),Point(r.x + r.width,r.y + r.height) };
-	bool _inside = true;
-	for (int i = 0;i < 4; i++)
-	{
-		if (points[i].x < 0 || points[i].y < 0 || points[i].y >= src.rows || points[i].x >= src.cols)
-			_inside = false;
-	}
-	if (_inside)
-	{
-		src(r).copyTo(dst);
-	}
-	
-	rectangle(src, r, Scalar(0, 255, 0), 1, LINE_AA);
-	return;
-	
+
+	Point center = findHighestPoint(contours[highest_line_idx]);
+
+	Rect rec = batteryBoundingRect(center, battery_width, battery_height);
+	dst = src(rec).clone();
+	rectangle(src, rec, Scalar(0, 255, 0));
+	ru.x = rec.x;
+	ru.y = rec.y;
 }
 
 /// <summary>
@@ -310,26 +329,31 @@ void region::detectNakedBattery(Mat & src, Mat & dst)
 /// </summary>
 /// <param name="src">相机捕获的图像</param>
 /// <param name="dst">电池区域图像</param>
-void region::detectTopSideBattery(Mat & src, Mat & dst, BatteryTopDetector *detector)
+void region::detectTopSideBattery(Mat &src, Mat & dst)
 {
-	detector->Detect(src, dst);
-	/*src = src(Range(250, 700), Range(400, 850));
 	Mat gray;
-	cvtColor(src, gray, CV_BGR2GRAY);
-
+	if (src.channels() == 3)
+		cvtColor(src, gray, CV_BGR2GRAY);
+	else
+		gray = src;
 	Mat binary;
-	threshold(gray, binary, 128, 255, ThresholdTypes::THRESH_BINARY | ThresholdTypes::THRESH_OTSU);
-	vector<Point> pts;
-	for (int i = 0; i < binary.rows; i++) {
-		for (int j = 0; j < binary.cols; j++) {
-			if (binary.at<uchar>(Point(j, i)) == 255) {
-				pts.push_back(Point(j, i));
-			}
+	binary = gray > 15 & gray < 255;
+	vector<vector<Point>> contours;
+	findContours(binary, contours, RetrievalModes::RETR_CCOMP, CHAIN_APPROX_SIMPLE);
+	int max_area_idx = -1;
+	float max_area = 0;
+	for (int i = 0; i < contours.size(); i++)
+	{
+		float area = contourArea(contours[i]);
+		if (area > max_area)
+		{
+			max_area = area;
+			max_area_idx = i;
 		}
 	}
-	Rect rect = boundingRect(pts);
-	dst = src(rect);
-	return;*/
+	Rect rect = boundingRect(contours[max_area_idx]);
+	dst = src(rect).clone();
+	rectangle(src, rect, Scalar(0, 255, 0));
 }
 
 /// <summary>

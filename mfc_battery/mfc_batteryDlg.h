@@ -22,10 +22,15 @@ public:
 #endif
 	int battery_count;
 	long long start_time;
-	bool color_battery;
+	bool is_colorBattery;
 	bool capture_running;
+	// 用于侧面检测的变量
+	int frame_cur_count; // 当前帧
+	int frame_max_count; // 输出结果帧
+	float naked_pit_rate;
 	HANDLE* camera_handle;
 	CComboBox* trigger_mode;
+	volatile int sides_processed; // 电池表面的已处理计数，当计数为0时，可以进行下一个电池检测；当计数为1或2时，表明还有电池表面未检测完毕；当计数为3时，表明电池表面均已经检测完毕，计数重新置零
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 	CMenu *dlg_menu; // 对话框菜单
@@ -68,4 +73,7 @@ public:
 	afx_msg void OnBnClickedRecam();
 	afx_msg void OnCbnSelchangeTrimode();
 	afx_msg void OnBnClickedSwping();
+	afx_msg void OnBnClickedSinglecam();
+	afx_msg void OnBnClickedMuiltcam();
+	afx_msg void OnCbnSelchangeDft2rt();
 };

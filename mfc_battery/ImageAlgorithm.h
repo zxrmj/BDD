@@ -7,6 +7,7 @@ namespace feature
 {
 	Mat extractColorFeature(Mat src); // 提取包膜电池的侧表面特征向量
 	Mat extractNakedFeature(Mat src); // 提取未包膜电池的侧表面特征向量
+	Mat extractNakedLocalFeature(Mat src); // 提取未包膜电池的侧表面局部特征向量
 	Mat extractRustyFeature(Mat src); // 提取电池顶面锈痕特征向量
 	Mat extractUpSidePitFeature(Mat src); // 提取电池顶面凹坑特征向量
 } // FEATURE ALGOTHERM
@@ -14,8 +15,8 @@ namespace feature
 namespace region 
 {
 	void detectColourBattery(Mat &src, Mat &dst);
-	void detectNakedBattery(Mat &src,Mat &dst);
-	void detectTopSideBattery(Mat & src, Mat & dst, BatteryTopDetector * detector);
+	void detectNakedBattery(Mat &src,Mat &dst,Point &ru);
+	void detectTopSideBattery(Mat & src, Mat & dst);
 	//void detectFloorSideBattery(Mat &src, Mat &dst);
 	void detectLowSideBattery(Mat &src, Mat &dst);
 } // REGION OF INTERSTING EXTRACTION
